@@ -1,133 +1,96 @@
 <template>
-  <div class="page-container">
-    <!-- Page title -->
-    <h1 class="page-title">Notes App</h1>
-    <div v-if="!showEditor">
-      <div class="notes-container">
-        <!-- Loop through the notes and display each note -->
-        <div v-for="note in notes" :key="note.id" class="note-item">
-          <h3 class="note-title">{{ note.title }}</h3>
+  <!-- Notes App Container -->
+  <div class="p-2 m-2 align-self-stretch">
 
-          <!-- Show truncated content if the note is not in edit mode -->
-          <div v-if="!note.showFullContent" class="note-content">
-            {{ truncateContent(note.content) }}
-            <div class="see-more">
-              <!-- Button to expand the content -->
-              <button @click="showFullContent(note.id)">See More</button>
+    <!-- Navbar -->
+    <div class="navbar rounded shadow-sm p-3 mb-5 bg-white rounded">
+      <h1 class="navbar-title">Notes App</h1>
+      <img src="@/assets/notes.png" class="navbar-logo" alt="image note">
+      <button type="button" class="btn btn-warning navbar-btn" @click="showEditor = true">ADD NOTE</button>
+    </div>
+
+    <!-- Main Notes Section -->
+    <div v-if="!showEditor" class="container">
+      <div class="grid grid-cols-4 gap-4 m-5">
+        <div v-for="note in notes" :key="note.id" class="note-item bg-white shadow rounded p-4">
+          <h3 class="note-title text-purple-700 font-bold text-xl">{{ note.title }}</h3>
+          <div class="note-content text-gray-800">
+            {{ note.content }}
+          </div>
+
+          <!-- Edit Mode -->
+          <div v-if="editingNoteId === note.id">
+            <!-- Edit Title and Content Fields -->
+            <input v-model="note.title" placeholder="Title" class="form-control" />
+            <textarea v-model="note.content" placeholder="Content" class="form-control"></textarea>
+            <div class="edit-buttons mt-2">
+              <button class="btn btn-success" @click="saveEdit(note.id)">
+                <i class="fas fa-check"></i> Save
+              </button>
+              <button class="btn btn-secondary" @click="editingNoteId = null">
+                <i class="fas fa-times"></i> Cancel
+              </button>
             </div>
           </div>
 
-          <!-- Show full content if the note is in edit mode -->
+          <!-- View Mode -->
           <div v-else>
-            <div v-if="editingNoteId === note.id">
-              <!-- Input fields for editing the note -->
-              <input v-model="note.title" placeholder="Title" />
-              <textarea v-model="note.content" placeholder="Content"></textarea>
-              <div class="edit-buttons">
-                <!-- Save and Cancel buttons for editing -->
-                <button class="btn btn-success" @click="saveEdit(note.id)">
-                  <i class="fas fa-check"></i> Save
-                </button>
-                <button class="btn btn-secondary" @click="cancelEdit()">
-                  <i class="fas fa-times"></i> Cancel
-                </button>
-              </div>
-            </div>
-            <div v-else>
-              <!-- Display the full content of the note -->
-              <p>{{ note.content }}</p>
-              <div class="view-buttons">
-                <!-- Edit and Delete buttons for each note -->
-                <button class="btn btn-primary" @click="startEdit(note.id)">
-                  <i class="fas fa-edit"></i> Edit
-                </button>
-                <button class="btn btn-danger" @click="deleteNote(note.id)">
-                  <i class="fas fa-trash-alt"></i> Delete
-                </button>
-              </div>
+            <div class="view-buttons mt-2">
+              <button class="btn btn-primary" @click="editingNoteId = note.id">
+                <i class="fas fa-edit"></i> Edit
+              </button>
+              <button class="btn btn-danger" @click="deleteNote(note.id)">
+                <i class="fas fa-trash-alt"></i> Delete
+              </button>
             </div>
           </div>
         </div>
       </div>
-      
-      <!-- Button to add a new note -->
-      <button class="add-button" @click="showEditor = true">Add Note</button>
     </div>
 
-    <!-- New note editor section -->
-    <div v-if="showEditor" class="editor">
-      <!-- Input fields for creating a new note -->
-      <input v-model="newNote.title" placeholder="Title" />
-      <textarea v-model="newNote.content" placeholder="Content"></textarea>
-      <div class="editor-buttons">
-        <!-- Save and Cancel buttons for creating a new note -->
-        <button class="btn btn-success" @click="saveNote">
-          <i class="fas fa-save"></i> Save
-        </button>
-        <button class="btn btn-secondary" @click="cancelNote">
-          <i class="fas fa-times"></i> Cancel
-        </button>
+    <!-- Editor Section -->
+    <div v-if="showEditor" class="editor-container">
+      <div class="editor-box">
+        <input v-model="newNote.title" placeholder="Title" class="form-control" />
+        <textarea v-model="newNote.content" placeholder="Content" class="form-control"></textarea>
+        <div class="editor-buttons mt-2">
+          <button class="btn btn-success" @click="saveNote">
+            <i class="fas fa-save"></i> Save
+          </button>
+          <button class="btn btn-secondary" @click="showEditor = false">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
-<!---------------------------------------------------------------->
+<!-- Script Section -->
 <script>
 export default {
   name: "NotesContainer",
 
   data() {
     return {
-      // Whether to show the new note editor or not
+      // State variables
       showEditor: false,
-      
-      // Object to store the data of the new note being created
       newNote: { title: "", content: "" },
-      
-      // Array to store the notes
       notes: [],
-      
-      // ID of the note currently being edited
       editingNoteId: null,
     };
   },
 
   methods: {
-    // Function to truncate the content of a note to a specific length
-    truncateContent(content) {
-      const maxLength = 20;
-      return content.length > maxLength ? content.substring(0, maxLength) + "..." : content;
-    },
-
-    // Function to show the full content of a note
-    showFullContent(id) {
-      const noteIndex = this.notes.findIndex((note) => note.id === id);
-      if (noteIndex !== -1) {
-        this.notes[noteIndex].showFullContent = true;
-      }
-    },
-
-    // Function to enter edit mode for a specific note
-    startEdit(id) {
-      this.editingNoteId = id;
-    },
-
-    // Function to save the changes made to a note in edit mode
+    // Method to save edited note
     saveEdit(id) {
       const editedNote = this.notes.find((note) => note.id === id);
       if (editedNote) {
-        editedNote.showFullContent = false;
         this.editingNoteId = null;
       }
     },
 
-    // Function to cancel the edit mode for a note
-    cancelEdit() {
-      this.editingNoteId = null;
-    },
-
-    // Function to delete a note
+    // Method to delete a note
     deleteNote(id) {
       const noteIndex = this.notes.findIndex((note) => note.id === id);
       if (noteIndex !== -1) {
@@ -135,188 +98,99 @@ export default {
       }
     },
 
-    // Function to save a new note
+    // Method to save a new note
     saveNote() {
       if (this.newNote.title && this.newNote.content) {
-        const newNote = { ...this.newNote, id: Date.now(), showFullContent: false };
+        const newNote = { ...this.newNote, id: Date.now() };
         this.notes.push(newNote);
         this.newNote = { title: "", content: "" };
         this.showEditor = false;
       }
     },
-
-    // Function to cancel creating a new note
-    cancelNote() {
-      this.newNote = { title: "", content: "" };
-      this.showEditor = false;
-    },
   },
 };
 </script>
 
-<!---------------------------------------------------------------->
+<!-- Styles Section -->
 <style>
+/* Importing styles */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+@import '~bootstrap/dist/css/bootstrap.min.css';
 
-/* Body */
-body {
-  background: linear-gradient(to right, #9575cd, #7986cb);
-  background-size: 100% 100%; 
+/* Navbar styles */
+.navbar {
+  background: linear-gradient(to right, #fb9619, #da7492);
+  background-size: 100% 100%;
 }
 
-/* Main page container */
-.page-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
+.navbar-logo {
+  width: 10%;
 }
 
-/* Page title */
-.page-title {
-  font-size: 36px;
-  margin-bottom: 2px;
-  color: #4a148c; 
+.navbar-title {
+  font-size: 24px;
+  font-weight: bold;
 }
 
-/* Add button */
-.add-button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
+.navbar-btn {
   font-size: 18px;
-  color: white;
-  background-color: #8e24aa; 
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
 }
 
-.add-button:hover {
-  background-color: #6a1b9a; 
-}
-
-/* Notes container */
-.notes-container {
-  display: flow-root;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-/* Note item */
+/* Note item styles */
 .note-item {
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  transition: transform 0.2s ease-in-out;
+  margin-bottom: 20px;
+  border-radius: 10px;
   padding: 20px;
-  width: 300px;
-  background-color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background-color: #f3f4f6;
+  flex: 1;
+  max-width: calc(25% - 20px);
 }
 
 .note-item:hover {
-  transform: scale(1.05);
+  transform: scale(1.03);
 }
 
-/* Note title */
-.note-title {
-  font-size: 20px;
-  font-weight: bold;
-  margin: 0 0 10px;
-  color: #4a148c; 
-}
-
-/* Note content */
-.note-content {
-  height: 100px;
-  overflow: hidden;
-  margin-bottom: 10px;
-  color: #333; 
-}
-
-/* "See More" button in truncated notes */
-.see-more {
+/* Editor styles */
+.editor-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
-}
-
-.see-more button {
-  border: none;
-  cursor: pointer;
-  color: #2962ff; 
-  background: none;
-  text-decoration: underline;
-  font-size: 14px;
-}
-
-.see-more button:hover {
-  text-decoration: none;
-}
-
-/* Editor */
-.editor {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  padding: 20px;
-  border-radius: 8px;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.6);
   z-index: 999;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  background-color: #f7f7f7;
 }
 
-/* Editor input and textarea */
-.editor input, .editor textarea {
+.editor-box {
+  width: 300px;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.editor-box input,
+.editor-box textarea {
   width: 100%;
-  margin-bottom: 10px;
   padding: 10px;
+  margin-bottom: 10px;
   border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 16px;
+  border-radius: 4px;
 }
 
-/* Editor buttons */
-.editor-buttons {
+.editor-box .editor-buttons {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
 }
 
-/* Save button in editor */
-.save-button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  margin-left: 10px;
-  color: white;
-  background-color: #00c853; 
-  transition: background-color 0.3s ease;
+.editor-box .btn {
+  margin-right: 5px;
 }
-
-.save-button:hover {
-  background-color: #007e33; 
-}
-
-/* Cancel button in editor */
-.cancel-button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  margin-left: 10px;
-  color: black;
-  background-color: #e0e0e0; 
-  transition: background-color 0.3s ease;
-}
-
-.cancel-button:hover {
-  background-color: #bdbdbd; 
-}
-
 </style>
